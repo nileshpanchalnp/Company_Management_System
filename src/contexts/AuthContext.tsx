@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Server } from '../server/Server';
+import { toast } from 'react-toastify';
 
 export type UserRole = 'admin' | 'hr' | 'employee';
 
@@ -76,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_active: user.is_active,
       })
     );
-
+    toast.success('User Login successful!');
     setUser({ id: user.id, email: user.email });
     setProfile({
       id: user.id,
@@ -87,10 +88,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // LOGOUT
   const signOut = () => {
+    toast.success('USer LogOut successful!');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('profile');
-
+    
     setUser(null);
     setProfile(null);
   };

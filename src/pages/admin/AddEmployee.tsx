@@ -3,16 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import axios from 'axios';
 import { Server } from '../../server/Server';
+import { toast } from 'react-toastify';
 
 const api = axios.create({
   baseURL: Server,
-  withCredentials: true,
 });
+
+// 🔐 Attach token automatically
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 
 export const AddEmployee: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
   const [departments, setDepartments] = useState<any[]>([]);
   const [jobRoles, setJobRoles] = useState<any[]>([]);
 
@@ -46,12 +61,14 @@ export const AddEmployee: React.FC = () => {
 
   const fetchDepartments = async () => {
     const res = await axios.get(Server+'department/get');
-    setDepartments(res.data);
+  setDepartments(res.data.data); // ✅ FIX
+  console.log("department",res.data.data);
   };
 
   const fetchJobRoles = async () => {
     const res = await axios.get(Server+'job_role/get');
-    setJobRoles(res.data);
+  setJobRoles(res.data.data);
+  console.log("jobs",res.data.data);
   };
 
 const generateEmployeeCode = () => {
@@ -83,11 +100,12 @@ const generateEmployeeCode = () => {
         basic_salary: Number(formData.basic_salary),
         employment_status: 'active',
       });
-
+      toast.success('Employee added successfully!');
       navigate('/admin/employees');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to add employee');
+    } catch (err: any) {
+    console.error("Error creating question:", err);
+    setError(err.response?.data?.message || "Failed to Add Employee");
+    toast.error(err.response?.data?.message || "Failed to Add Employee");
     } finally {
       setLoading(false);
     }
@@ -108,6 +126,11 @@ const generateEmployeeCode = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow">
+         {error && (
+              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
         <div className="p-6 space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>

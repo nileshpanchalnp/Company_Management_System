@@ -4,20 +4,19 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Unauthorized } from './pages/Unauthorized';
-
+import './axiosConfig';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { Employees } from './pages/admin/Employees';
 import { AddEmployee } from './pages/admin/AddEmployee';
 import { Attendance } from './pages/admin/Attendance';
 import { LeaveRequests } from './pages/admin/LeaveRequests';
 import { Payroll } from './pages/admin/Payroll';
-
 import { HRDashboard } from './pages/hr/HRDashboard';
-
 import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
 import { MyLeaves } from './pages/employee/MyLeaves';
 import { MyPayslips } from './pages/employee/MyPayslips';
 import { MyProfile } from './pages/employee/MyProfile';
+import { ToastContainer } from 'react-toastify';
 
 function RoleBasedRedirect() {
   const { profile, loading } = useAuth();
@@ -219,6 +218,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <ToastContainer />
       </AuthProvider>
     </BrowserRouter>
   );

@@ -1,22 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Calendar, Clock, Check, X } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import axios from 'axios';
+import { Server } from '../../server/Server';
 
 interface Leave {
-  id: string;
+  _id: string;
   from_date: string;
   to_date: string;
   total_days: number;
   reason: string;
-  status: string;
-  created_at: string;
-  leave_types: { name: string };
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  leave_type: {
+    _id: string;
+    name: string;
+  };
 }
 
 export const MyLeaves: React.FC = () => {
   const { user } = useAuth();
-  const [employee, setEmployee] = useState<any>(null);
+  // const [employee, setEmployee] = useState<any>(null);
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,36 +37,32 @@ export const MyLeaves: React.FC = () => {
       fetchData();
     }
   }, [user]);
+ const fetchData = async () => {
+  try {
+    const leaveRes = await axios.get(`${Server}leave/myleave`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
 
-  const fetchData = async () => {
-    try {
-      const { data: empData } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('user_id', user!.id)
-        .maybeSingle();
+    setLeaves(Array.isArray(leaveRes.data?.data) ? leaveRes.data.data : []);
 
-      setEmployee(empData);
+    const typeRes = await axios.get(`${Server}leave-type/get`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
 
-      if (empData) {
-        const [leavesRes, typesRes] = await Promise.all([
-          supabase
-            .from('leaves')
-            .select('*, leave_types(name)')
-            .eq('employee_id', empData.id)
-            .order('created_at', { ascending: false }),
-          supabase.from('leave_types').select('*').eq('is_active', true),
-        ]);
+    setLeaveTypes(Array.isArray(typeRes.data?.data) ? typeRes.data.data : []);
+  } catch (error) {
+    console.error('Error fetching leave data:', error);
+    setLeaves([]);
+    setLeaveTypes([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
-        setLeaves(leavesRes.data || []);
-        setLeaveTypes(typesRes.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const calculateDays = (from: string, to: string) => {
     const start = new Date(from);
@@ -73,32 +73,40 @@ export const MyLeaves: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!employee) return;
 
     try {
       const totalDays = calculateDays(formData.from_date, formData.to_date);
 
-      const { error } = await supabase.from('leaves').insert({
-        employee_id: employee.id,
-        leave_type_id: formData.leave_type_id,
-        from_date: formData.from_date,
-        to_date: formData.to_date,
-        total_days: totalDays,
-        reason: formData.reason,
-        status: 'pending',
-      });
-
-      if (error) throw error;
+      await axios.post(
+        Server + 'leave/apply',
+        {
+          leave_type_id: formData.leave_type_id,
+          from_date: formData.from_date,
+          to_date: formData.to_date,
+          total_days: totalDays,
+          reason: formData.reason,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
 
       setShowModal(false);
-      setFormData({ leave_type_id: '', from_date: '', to_date: '', reason: '' });
+      setFormData({
+        leave_type_id: '',
+        from_date: '',
+        to_date: '',
+        reason: '',
+      });
+
       fetchData();
     } catch (error) {
-      console.error('Error creating leave request:', error);
-      alert('Error creating leave request');
+      console.error('Leave apply failed:', error);
+      alert('Failed to apply leave');
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
@@ -172,12 +180,12 @@ export const MyLeaves: React.FC = () => {
               <p className="text-center text-gray-500 py-8">No leave requests yet</p>
             ) : (
               leaves.map((leave) => (
-                <div key={leave.id} className="border border-gray-200 rounded-lg p-4">
+                <div key={leave._id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <span className="font-semibold text-gray-800">
-                          {leave.leave_types?.name}
+                          {leave.leave_type?.name}
                         </span>
                         <span
                           className={`flex items-center space-x-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
@@ -229,7 +237,7 @@ export const MyLeaves: React.FC = () => {
                 >
                   <option value="">Select Leave Type</option>
                   {leaveTypes.map((type) => (
-                    <option key={type.id} value={type.id}>
+                    <option key={type._id} value={type._id}>
                       {type.name} ({type.days_per_year} days/year)
                     </option>
                   ))}
