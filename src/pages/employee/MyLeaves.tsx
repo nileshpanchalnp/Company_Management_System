@@ -3,6 +3,7 @@ import { Plus, Calendar, Clock, Check, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import axios from 'axios';
 import { Server } from '../../server/Server';
+import { toast } from 'react-toastify';
 
 interface Leave {
   _id: string;
@@ -45,7 +46,7 @@ export const MyLeaves: React.FC = () => {
       },
     });
 
-    setLeaves(Array.isArray(leaveRes.data?.data) ? leaveRes.data.data : []);
+    setLeaves(Array.isArray(leaveRes.data) ? leaveRes.data : []);
 
     const typeRes = await axios.get(`${Server}leave-type/get`, {
       headers: {
@@ -100,11 +101,11 @@ export const MyLeaves: React.FC = () => {
         to_date: '',
         reason: '',
       });
-
+      toast.success('Leave applied successfully!');
       fetchData();
     } catch (error) {
       console.error('Leave apply failed:', error);
-      alert('Failed to apply leave');
+      toast.error('Failed to apply leave!');
     }
   };
   const getStatusColor = (status: string) => {
