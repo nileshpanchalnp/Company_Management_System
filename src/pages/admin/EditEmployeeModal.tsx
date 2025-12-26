@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { X, User, Briefcase, Landmark, MapPin, Save, AlertCircle } from 'lucide-react';
+import { X, User, Briefcase,  MapPin, Save, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
+import {Server} from '../../server/Server';
 
-// --- 1. DEFINE CONSTANTS & SUB-COMPONENTS OUTSIDE TO FIX THE FOCUS BUG ---
 
 const inputBase = "w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm transition-all duration-200 outline-none focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:border-slate-300";
 
@@ -57,19 +57,19 @@ const [form, setForm] = useState({
 }, []);
 
 const fetchDepartments = async () => {
-  const res = await axios.get('http://localhost:5000/department/get');
+  const res = await axios.get(Server + 'department/get');
   setDepartments(res.data.data);
 };
 
 const fetchJobRoles = async () => {
-  const res = await axios.get('http://localhost:5000/job_role/get');
+  const res = await axios.get(Server + 'job_role/get');
   setJobRoles(res.data.data);
 };
 
   const handleUpdate = async () => {
     try {
       setLoading(true);
-      await axios.put(`http://localhost:5000/employee/update/${employee._id}`, form);
+      await axios.put(Server +` employee/update/${employee._id}`, form);
       onUpdated();
       onClose();
       toast.success('Employee updated successfully!');
